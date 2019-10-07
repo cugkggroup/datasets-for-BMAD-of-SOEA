@@ -3,7 +3,6 @@ from gurobipy import *
 import math
 import time
 import random
-M = Model()
 ############Design DataSet#####################
 # normal distributions
 def Platform_range(X,u,eta):
@@ -92,66 +91,12 @@ for i in range(numConflict):
          conflict[ii][1] = total_pair_sensor[s1-1][0]
          conflict[ii][2] = total_pair_sensor[s1-1][1]
          f.writelines(['[',str(conflict[ii][1]),',',str(conflict[ii][2]),',',str(conflict[ii][0]),'] '])
-         c[ii] = M.addVar(vtype=GRB.BINARY, name="c(%d)" % (ii)) ##ILP ALGORITHM##
          jj = jj + 1
      Total_count =  Total_count + end - start  
      f.write("\n\n")
 f.close()
 
-#############ILP ALGORITHM####################
-conflict_number = len(c)
-#initial variable
-count11 = 0
-Link = {}
-
-for i in range(m):
-    count = 0
-    k = 0
-
-    # print i
-    for j in range(n):
-        if (i * density <= k and k < i * density + scope[i]):
-            x[i, j] = M.addVar(vtype=GRB.BINARY, name="x(%d,%d)" % (i, j))
-            y[i, j] = M.addVar(vtype=GRB.BINARY, name="y(%d,%d)" % (i, j))
-            count = count + 1
-        else:
-            x[i, j] = 0
-            y[i, j] = 0
-        a[i, j] = 1
-        b[i, j] = 1
-        if j < numTargets:
-            b1[i, j] = 1
-            b2[i, j] = 0
-        else:
-            b1[i, j] = 0
-            b2[i, j] = 1
-        weights[i, j] = 1
-        w[i, j] = 1
-        k = k + 1
-    d[i] = count
-    count11 = count11 + d[i]
-for i in range(m):
-    k1 = 0
-    for j in range(m * n):
-        if j >= (i * n) and j < (i + 1) * n :
-            A[i, j] = w[i, k1]
-            k1 = k1 + 1
-        else:
-            A[i, j] = 0
-for i in range(n):
-    k2 = 0
-    for j in range(m*n):
-        if j - i >= 0 and (j - i) % n == 0:
-            B[i, j] = w[k2, i]
-            k2 = k2 + 1
-        else:
-            B[i, j] = 0
-Num = {}
-for i in range(n):
-    Num[i] = i + 1
-M.update()
-
-# Add constraints the power limited
+#############Constraint####################
 
 #Degree Constraints
 for i in range(m):
@@ -183,10 +128,3 @@ for j in range(conflict_number):
      M.addConstr(
          x[conflict[j][1], conflict[j][0]] + x[conflict[j][2], conflict[j][0]] - 2 * c[
              j] >= 0)
-
-# Object
-obj = quicksum(quicksum(
-    weights[i, j] * a[i, j] * x[i, j] + weights[i, j] * b[
-        i, j] * y[i, j] for j in range(n)) for i in range(m))
-M.setObjective(obj, GRB.MINIMIZE)
-M.optimize()
